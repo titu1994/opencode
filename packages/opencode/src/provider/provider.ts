@@ -798,15 +798,34 @@ export namespace Provider {
         parsed.models[modelID] = parsedModel
       }
       database[providerID] = parsed
+      log.info("added config provider to database", { 
+        providerID, 
+        modelCount: Object.keys(parsed.models).length,
+        modelIds: Object.keys(parsed.models)
+      })
     }
 
     // Initialize config providers directly into providers object
     // This ensures custom providers (like vllm) work even without auth/env setup
+    log.info("initializing config providers into providers object", { 
+      configProviderCount: configProviders.length,
+      configProviderIds: configProviders.map(([id]) => id)
+    })
     for (const [providerID, provider] of configProviders) {
       const dbProvider = database[providerID]
       if (dbProvider && Object.keys(dbProvider.models).length > 0) {
         providers[providerID] = dbProvider
-        log.info("loaded config provider", { providerID })
+        log.info("loaded config provider", { 
+          providerID, 
+          modelCount: Object.keys(dbProvider.models).length,
+          modelIds: Object.keys(dbProvider.models)
+        })
+      } else {
+        log.warn("config provider not loaded", {
+          providerID,
+          inDatabase: !!dbProvider,
+          modelCount: dbProvider ? Object.keys(dbProvider.models).length : 0
+        })
       }
     }
 
@@ -898,16 +917,34 @@ export namespace Provider {
     }
 
     // load config
+    log.info("merging config provider options", {
+      configProviderCount: configProviders.length,
+      existingProviderIds: Object.keys(providers)
+    })
     for (const [providerID, provider] of configProviders) {
       const partial: Partial<Info> = { source: "config" }
       if (provider.env) partial.env = provider.env
       if (provider.name) partial.name = provider.name
       if (provider.options) partial.options = provider.options
+      log.info("calling mergeProvider for config", {
+        providerID,
+        providerExistsInProvidersObject: !!providers[providerID],
+        providerExistsInDatabase: !!database[providerID],
+        hasOptions: !!provider.options
+      })
       mergeProvider(providerID, partial)
     }
 
+    log.info("filtering and finalizing providers", {
+      providerCount: Object.keys(providers).length,
+      providerIds: Object.keys(providers)
+    })
+    
     for (const [providerID, provider] of Object.entries(providers)) {
+      const modelsBefore = Object.keys(provider.models).length
+      
       if (!isProviderAllowed(providerID)) {
+        log.info("provider not allowed (disabled or not enabled)", { providerID })
         delete providers[providerID]
         continue
       }
@@ -947,13 +984,31 @@ export namespace Provider {
         }
       }
 
-      if (Object.keys(provider.models).length === 0) {
+      const modelsAfter = Object.keys(provider.models).length
+      if (modelsAfter === 0) {
+        log.warn("provider filtered out (no models remaining)", { 
+          providerID, 
+          modelsBefore, 
+          modelsAfter 
+        })
         delete providers[providerID]
         continue
       }
 
-      log.info("found", { providerID })
+      log.info("found", { 
+        providerID, 
+        modelCount: modelsAfter,
+        modelIds: Object.keys(provider.models).slice(0, 5) // Log first 5 model IDs
+      })
     }
+    
+    log.info("final provider state", {
+      totalProviders: Object.keys(providers).length,
+      providerIds: Object.keys(providers),
+      providerModelCounts: Object.fromEntries(
+        Object.entries(providers).map(([id, p]) => [id, Object.keys(p.models).length])
+      )
+    })
 
     return {
       models: languages,
@@ -1079,10 +1134,22 @@ export namespace Provider {
     const provider = s.providers[providerID]
     if (!provider) {
       const availableProviders = Object.keys(s.providers)
+      log.error("provider not found when getting model", {
+        requestedProvider: providerID,
+        requestedModel: modelID,
+        availableProviders,
+        totalProviders: availableProviders.length
+      })
       const matches = fuzzysort.go(providerID, availableProviders, { limit: 3, threshold: -10000 })
       const suggestions = matches.map((m) => m.target)
       throw new ModelNotFoundError({ providerID, modelID, suggestions })
     }
+    
+    log.info("found provider, checking for model", {
+      providerID,
+      requestedModel: modelID,
+      availableModels: Object.keys(provider.models).slice(0, 10)
+    })
 
     const info = provider.models[modelID]
     if (!info) {
