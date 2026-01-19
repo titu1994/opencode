@@ -347,7 +347,10 @@ export const RunCommand = cmd({
 
     await bootstrap(cwd, async () => {
       const server = Server.listen({ port: args.port ?? 0, hostname: "127.0.0.1" })
-      const sdk = createOpencodeClient({ baseUrl: `http://${server.hostname}:${server.port}` })
+      const sdk = createOpencodeClient({ 
+        baseUrl: `http://${server.hostname}:${server.port}`,
+        headers: { "x-opencode-directory": cwd }
+      })
 
       if (args.command) {
         const exists = await Command.get(args.command)
