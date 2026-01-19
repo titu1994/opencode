@@ -351,6 +351,9 @@ export const RunCommand = cmd({
         baseUrl: `http://${server.hostname}:${server.port}`,
         headers: { "x-opencode-directory": cwd }
       })
+      
+      // Print server URL for external tools (e.g., question answerer) to detect
+      console.log(`server listening on http://${server.hostname}:${server.port}`)
 
       if (args.command) {
         const exists = await Command.get(args.command)
