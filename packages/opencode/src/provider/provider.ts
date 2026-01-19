@@ -798,7 +798,7 @@ export namespace Provider {
         parsed.models[modelID] = parsedModel
       }
       database[providerID] = parsed
-      log.info("added config provider to database", { 
+      log.debug("added config provider to database", { 
         providerID, 
         modelCount: Object.keys(parsed.models).length,
         modelIds: Object.keys(parsed.models)
@@ -807,7 +807,7 @@ export namespace Provider {
 
     // Initialize config providers directly into providers object
     // This ensures custom providers (like vllm) work even without auth/env setup
-    log.info("initializing config providers into providers object", { 
+    log.debug("initializing config providers into providers object", { 
       configProviderCount: configProviders.length,
       configProviderIds: configProviders.map(([id]) => id)
     })
@@ -815,7 +815,7 @@ export namespace Provider {
       const dbProvider = database[providerID]
       if (dbProvider && Object.keys(dbProvider.models).length > 0) {
         providers[providerID] = dbProvider
-        log.info("loaded config provider", { 
+        log.debug("loaded config provider", { 
           providerID, 
           modelCount: Object.keys(dbProvider.models).length,
           modelIds: Object.keys(dbProvider.models)
@@ -917,7 +917,7 @@ export namespace Provider {
     }
 
     // load config
-    log.info("merging config provider options", {
+    log.debug("merging config provider options", {
       configProviderCount: configProviders.length,
       existingProviderIds: Object.keys(providers)
     })
@@ -926,7 +926,7 @@ export namespace Provider {
       if (provider.env) partial.env = provider.env
       if (provider.name) partial.name = provider.name
       if (provider.options) partial.options = provider.options
-      log.info("calling mergeProvider for config", {
+      log.debug("calling mergeProvider for config", {
         providerID,
         providerExistsInProvidersObject: !!providers[providerID],
         providerExistsInDatabase: !!database[providerID],
@@ -935,7 +935,7 @@ export namespace Provider {
       mergeProvider(providerID, partial)
     }
 
-    log.info("filtering and finalizing providers", {
+    log.debug("filtering and finalizing providers", {
       providerCount: Object.keys(providers).length,
       providerIds: Object.keys(providers)
     })
@@ -1002,7 +1002,7 @@ export namespace Provider {
       })
     }
     
-    log.info("final provider state", {
+    log.debug("final provider state", {
       totalProviders: Object.keys(providers).length,
       providerIds: Object.keys(providers),
       providerModelCounts: Object.fromEntries(
