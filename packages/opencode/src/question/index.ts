@@ -116,7 +116,9 @@ export namespace Question {
         resolve,
         reject,
       }
+      log.debug("DEBUG: question added to pending, total pending:", { pendingCount: Object.keys(s.pending).length })
       Bus.publish(Event.Asked, info)
+      log.debug("DEBUG: question event published", { id })
     })
   }
 

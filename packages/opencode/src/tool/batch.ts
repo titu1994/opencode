@@ -1,6 +1,9 @@
 import z from "zod"
 import { Tool } from "./tool"
 import DESCRIPTION from "./batch.txt"
+import { Session } from "../session"
+import { Instance } from "../project/instance"
+import { InstanceBootstrap } from "../project/bootstrap"
 
 const DISALLOWED = new Set(["batch"])
 const FILTERED_FROM_SUGGESTIONS = new Set(["invalid", "patch", ...DISALLOWED])
@@ -77,6 +80,16 @@ export const BatchTool = Tool.define("batch", async () => {
           })
 
           const result = await tool.execute(validatedParams, { ...ctx, callID: partID })
+
+          // Execute tool within the session's Instance context
+          // const session = await Session.get(ctx.sessionID)
+          // const result = await Instance.provide({
+          //   directory: session.directory,
+          //   init: InstanceBootstrap,
+          //   async fn() {
+          //     return tool.execute(validatedParams, { ...ctx, callID: partID })
+          //   },
+          // })
 
           await Session.updatePart({
             id: partID,
