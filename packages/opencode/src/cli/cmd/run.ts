@@ -345,7 +345,7 @@ export const RunCommand = cmd({
       return await execute(sdk, sessionID)
     }
 
-    await bootstrap(process.cwd(), async () => {
+    await bootstrap(cwd, async () => {
       const server = Server.listen({ port: args.port ?? 0, hostname: "127.0.0.1" })
       const sdk = createOpencodeClient({ baseUrl: `http://${server.hostname}:${server.port}` })
 
